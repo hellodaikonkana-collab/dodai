@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
 ArrowLeft, ArrowRight, Target, ShieldCheck, ChevronDown,
 ChevronUp, AlertTriangle, Loader2, Sparkles, Edit2, Save, Wrench,
@@ -208,6 +208,7 @@ const [isSpeaking, setIsSpeaking] = useState(false);
 const [isFullscreen, setIsFullscreen] = useState(false);
 const [isFullscreenEnabled, setIsFullscreenEnabled] = useState(true);
 const [fsErrorMsg, setFsErrorMsg] = useState(false);
+const [isRegenerating, setIsRegenerating] = useState(false);
 const recognitionRef = useRef(null);
 
 useEffect(() => {
@@ -278,32 +279,59 @@ setEditData(null);
 const handleEditStart = () => { setEditData(JSON.parse(JSON.stringify(currentJob))); setIsEditing(true); };
 const handleEditCancel = () => { setIsEditing(false); setEditData(null); };
 
-const handleEditSave = () => {
-const currentTitle = displayTitle(editData).trim();
-const targetKey = formatDateKey(selectedDateObj);
+const handleEditSave = async () => {
+  const newTitle = displayTitle(editData).trim();
+  const oldTitle = displayTitle(currentJob).trim();
+  const targetKey = formatDateKey(selectedDateObj);
 
-if (!currentTitle) {
-// 作業名が空になった場合はカレンダーから完全に消去する
-setJobs(prev => {
-const next = { ...prev };
-next[targetKey] = next[targetKey].filter(j => j.id !== currentJob.id);
-return next;
-});
-setSelectedDateObj(null);
-setActiveJobId(null);
-stopSpeaking();
-setIsEditing(false);
-return;
-}
+  if (!newTitle) {
+    setJobs(prev => {
+      const next = { ...prev };
+      next[targetKey] = next[targetKey].filter(j => j.id !== currentJob.id);
+      return next;
+    });
+    setSelectedDateObj(null);
+    setActiveJobId(null);
+    stopSpeaking();
+    setIsEditing(false);
+    return;
+  }
 
-setJobs(prev => {
-const next = { ...prev };
-next[targetKey] = next[targetKey].map(j => j.id === currentJob.id ? editData : j);
-return next;
-});
-setIsEditing(false);
+  if (newTitle !== oldTitle) {
+    setIsRegenerating(true);
+    try {
+      const data = await generateData(newTitle);
+      const updatedJob = {
+        ...editData,
+        title: newTitle,
+        translations: data.translations,
+        relationData: data.translations?.ja?.relationData || editData.relationData,
+        processes: data.translations?.ja?.processes || editData.processes,
+      };
+      setJobs(prev => {
+        const next = { ...prev };
+        next[targetKey] = next[targetKey].map(j => j.id === currentJob.id ? updatedJob : j);
+        return next;
+      });
+    } catch (error) {
+      console.error(error);
+      setJobs(prev => {
+        const next = { ...prev };
+        next[targetKey] = next[targetKey].map(j => j.id === currentJob.id ? editData : j);
+        return next;
+      });
+    } finally {
+      setIsRegenerating(false);
+    }
+  } else {
+    setJobs(prev => {
+      const next = { ...prev };
+      next[targetKey] = next[targetKey].map(j => j.id === currentJob.id ? editData : j);
+      return next;
+    });
+  }
+  setIsEditing(false);
 };
-
 const handleDeleteJob = (jobId) => {
 if (window.confirm(lang === 'ja' ? "この作業を削除しますか？" : "Are you sure you want to delete this job?")) {
 const targetKey = formatDateKey(selectedDateObj);
