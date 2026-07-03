@@ -555,6 +555,82 @@ catch (e) { console.error(e); }
 }
 };
 
+// タイトルからAIデータを生成する共通関数
+const generateData = async (title) => {
+  const apiKey = "";
+  if (!apiKey) {
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    return {
+      translations: {
+        ja: {
+          title: title,
+          relationData: [
+            { id: "r1", source: "事前準備・現場養生", target: "本体の設置・固定", focus: "作業環境の安全確保と、設置位置の寸法ズレ防止", prevents: "周囲の破損や、据付不良による手戻り", details: "施工前の墨出しと搬入経路の確保を確実行うことが熟練のポイントです。" },
+            { id: "r2", source: "本体の設置・固定", target: "配管・配線の接続", focus: "強固な固定を行い、振動による弛みを防ぐ", prevents: "稼働時の異音発生や、配管接続部への余計な負荷集中", details: "アンカーボルトの規定トルクでの締め付けトルク管理を徹底してください。" },
+            { id: "r3", source: "配管・配線の接続", target: "試運転・自主検査", focus: "気密試験や結線状態の確認を行い、品質を保証する", prevents: "ガス漏れ、水漏れ、短絡（ショート）などの重大な事故", details: "自主検査のチェックシートを用いてダブルチェックを実施してください。" }
+          ],
+          processes: [
+            { num: 1, title: "現場養生と機材の搬入", purpose: "周囲の床や壁を傷つけないよう保護し、円滑な作業を行うため。", points: "確実な養生シート敷き", risk: "荷崩れによる怪我", riskMgmt: "ヘルメットの完全着用" },
+            { num: 2, title: "本体機器の据付工事", purpose: "機器を正確な設計位置に据え付け、将来的な不具合を防ぐため。", points: "水平器による平行調整", risk: "重量物の足元落下", riskMgmt: "安全靴の着用と声掛け" },
+            { num: 3, title: "配管・電気配線接続", purpose: "冷媒ガスや電気の確実な供給ラインを構築し、リークを防ぐため。", points: "規定トルクでの締付", risk: "ガスの微小リーク", riskMgmt: "漏れ検知スプレー使用" },
+            { num: 4, title: "試運転調整と最終確認", purpose: "初期不具合がないか、設計通りの性能が出ているかを測定確認するため。", points: "運転電流と温度の計測", risk: "稼働部への巻き込み", riskMgmt: "運転中の回転部注意" }
+          ]
+        },
+        en: {
+          title: title,
+          relationData: [
+            { id: "r1", source: "Site Tarping", target: "Unit Mounting", focus: "Ensure environment protection and avoid size deviation", prevents: "Damaging walls and rework of installation", details: "Double-check measurements before securing the anchor bolts." },
+            { id: "r2", source: "Unit Mounting", target: "Piping & Wiring", focus: "Solid fixation to prevent loosening by vibration", prevents: "Abnormal noise and fatigue on pipe connections", details: "Use torque wrench for precise fastening." }
+          ],
+          processes: [
+            { num: 1, title: "Preparation & Safety Setup", purpose: "To protect the site and secure a safe working environment.", points: "Check safety gear", risk: "Falling hazards", riskMgmt: "Use safety harness" },
+            { num: 2, title: "Mounting the Unit", purpose: "To secure the main unit firmly at the designated location.", points: "Horizontal alignment", risk: "Heavy object drops", riskMgmt: "Safety boots required" },
+            { num: 3, title: "Piping & Connection", purpose: "To connect refrigerant lines and electric wiring without leaks.", points: "Torque control", risk: "Gas leakage", riskMgmt: "Soap bubble check" }
+          ]
+        },
+        vi: {
+          title: title,
+          relationData: [
+            { id: "r1", source: "Chuẩn bị hiện trường", target: "Lắp đặt thiết bị", focus: "Đảm bảo môi trường an toàn và chính xác vị trí", prevents: "Trầy xước tường và làm lại do lắp sai lệch", details: "Kiểm tra kỹ kích thước trước khi cố định máy." }
+          ],
+          processes: [
+            { num: 1, title: "Chuẩn bị & An toàn", purpose: "Che chắn hiện trường và chuẩn bị khu vực làm việc an toàn.", points: "Trải bạt cẩn thận", risk: "Rơi đồ vật", riskMgmt: "Đội mũ bảo hộ" },
+            { num: 2, title: "Lắp đặt thiết bị", purpose: "Cố định thiết bị chính xác tại vị trí thiết kế.", points: "Đo độ cân bằng", risk: "Thiết bị nặng rơi", riskMgmt: "Đi giày bảo hộ" }
+          ]
+        }
+      }
+    };
+  } else {
+    // 本物のGemini API呼び出し
+    const systemPrompt = `System prompt for DODAI application...`;
+    const userQuery = `Task: ${title}\nPlease output the roadmap and details.`;
+    const baseSchema = {
+      type: "OBJECT",
+      properties: {
+        title: { type: "STRING" },
+        relationData: { type: "ARRAY", items: { type: "OBJECT", properties: { id: { type: "STRING" }, source: { type: "STRING" }, target: { type: "STRING" }, focus: { type: "STRING" }, prevents: { type: "STRING" }, details: { type: "STRING" } } } },
+        processes: { type: "ARRAY", items: { type: "OBJECT", properties: { num: { type: "INTEGER" }, title: { type: "STRING" }, purpose: { type: "STRING" }, points: { type: "STRING" }, risk: { type: "STRING" }, riskMgmt: { type: "STRING" } } } }
+      }
+    };
+    const payload = {
+      contents: [{ parts: [{ text: userQuery }] }],
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      generationConfig: { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { translations: { type: "OBJECT", properties: { ja: baseSchema, en: baseSchema, vi: baseSchema } } } } }
+    };
+    let response = null; let retries = 5; let delay = 1000;
+    while (retries > 0) {
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        if (!res.ok) throw new Error("API error");
+        response = await res.json();
+        break;
+      } catch (e) { retries--; if (retries === 0) throw e; await new Promise(r => setTimeout(r, delay)); delay *= 2; }
+    }
+    const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
+    return JSON.parse(text);
+  }
+};
+
 const generateJobWithAI = async () => {
 if (!newJobTitle.trim() || !targetDateForNewJob) return;
 setIsGenerating(true);
@@ -1160,7 +1236,7 @@ const renderRelationFlow = (data, title) => (
                   ) : (
                     <div className="flex gap-2">
                       <button onClick={handleEditCancel} className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200">{t('cancel')}</button>
-                      <button onClick={handleEditSave} className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700"><Save className="w-4 h-4" /> {t('save')}</button>
+                      <button onClick={handleEditSave} disabled={isRegenerating} className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-70 transition-opacity">{isRegenerating ? <><Loader2 className="w-4 h-4 animate-spin" />{t('aiGenerating')}</> : <><Save className="w-4 h-4" />{t('save')}</>}</button>
                     </div>
                   )}
                 </div>
