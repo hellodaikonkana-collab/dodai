@@ -666,9 +666,8 @@ catch (e) { console.error(e); }
 }
 };
 
-// タイトルからAIデータを生成する共通関数（キーワード自動判定の高品質モックデータ & localStorage APIキー対応）
 const generateData = async (title) => {
-  const apiKey = localStorage.getItem("gemini_api_key") || "";
+  const apiKey = localStorage.getItem("gemini_api_key") || import.meta.env.VITE_GEMINI_API_KEY || "";
   console.log("generateData called. Title:", title, "Has API Key:", !!apiKey);
   
   if (!apiKey) {
