@@ -312,21 +312,24 @@ const handleEditSave = async () => {
       const enData = transObj.en || {};
       const viData = transObj.vi || {};
 
+      const jaRelation = jaData.relationData && jaData.relationData.length > 0 ? jaData.relationData : [];
+      const jaProcesses = jaData.processes && jaData.processes.length > 0 ? jaData.processes : [];
+
       const finalTranslations = {
         ja: {
           title: jaData.title || newTitle,
-          relationData: jaData.relationData || [],
-          processes: jaData.processes || []
+          relationData: jaRelation,
+          processes: jaProcesses
         },
         en: {
           title: enData.title || newTitle,
-          relationData: enData.relationData || [],
-          processes: enData.processes || []
+          relationData: enData.relationData && enData.relationData.length > 0 ? enData.relationData : jaRelation,
+          processes: enData.processes && enData.processes.length > 0 ? enData.processes : jaProcesses
         },
         vi: {
           title: viData.title || newTitle,
-          relationData: viData.relationData || [],
-          processes: viData.processes || []
+          relationData: viData.relationData && viData.relationData.length > 0 ? viData.relationData : jaRelation,
+          processes: viData.processes && viData.processes.length > 0 ? viData.processes : jaProcesses
         }
       };
 
@@ -635,9 +638,12 @@ const generateData = async (title) => {
     console.log("No API key found. Generating title-aware mock data.");
     await new Promise(resolve => setTimeout(resolve, 1200));
     
-    // タイトルのキーワードから施工ジャンルを判定
+    // タイトルのキーワードから施工ジャンルを細かく判定
     const isWeedBarrier = /防草|雑草|庭|草刈|砂利|シート/i.test(title);
-    const isPlumbingOrEquipment = /配管|配線|室外機|空調|供給|埋設|敷設|エアコン|設備|電気|接続/i.test(title);
+    const isPlumbingOrEquipment = /配管|配線|室外機|空調|供給|埋設|敷設|エアコン|設備|電気|接続|ガス/i.test(title);
+    const isPainting = /塗装|ペンキ|塗り|防水|外壁/i.test(title);
+    const isCarpentry = /大工|木工|組立|枠|ボード|木材|家具|ビス/i.test(title);
+    const isDemolition = /解体|撤去|壊し|処分/i.test(title);
     
     if (isWeedBarrier) {
       console.log("Weed barrier mock generated for title:", title);
@@ -656,25 +662,65 @@ const generateData = async (title) => {
               { num: 3, title: `固定ピン打ちとテープ処理`, purpose: `シートを地面に強固に固定し、めくれやズレを防ぐため。`, points: `重ね代10cm以上の確保と50cm間隔でのピン留め`, risk: `ハンマー打撃時の指の挟まれやピンの跳ね返り`, riskMgmt: `保護メガネ着用とハンマーの確実な握り` },
               { num: 4, title: `砂利の敷き均しと最終点検`, purpose: `シートを紫外線劣化から守り、景観を美しく仕上げるため。`, points: `厚さ3〜5cmを目安に均等に敷き詰める`, risk: `重労働による腰痛`, riskMgmt: `無理な姿勢を避け、一輪車等を活用した複数人での運搬` }
             ]
-          },
-          en: {
+          }
+        }
+      };
+    } else if (isPainting) {
+      console.log("Painting mock generated for title:", title);
+      return {
+        translations: {
+          ja: {
             title: title,
             relationData: [
-              { id: "r1", source: `${title}: Soil Prep`, target: `${title}: Sheet Laying`, focus: `Leveling soil and removing weeds`, prevents: `Sheet damage and weed regrowth`, details: `Carefully remove stones and level with a rake.` },
-              { id: "r2", source: `${title}: Sheet Laying`, target: `${title}: Pinning`, focus: `Securing overlapping areas (10cm+)`, prevents: `Gaps and wind uplift`, details: `Use tape on joints for maximum light blocking.` }
+              { id: "r1", source: `${title}の下地調整・高圧洗浄`, target: `${title}の養生マスキング`, focus: `塗装面の汚れや旧塗膜の完全な除去`, prevents: `塗料の密着不良による早期剥がれや浮き`, details: `洗浄後は塗装面が完全に乾燥するまで次の工程に進まないことが重要です。` },
+              { id: "r2", source: `${title}の養生マスキング`, target: `${title}の下塗り・中塗り・上塗り`, focus: `非塗装部分への塗料飛散を防ぐ厳重な保護`, prevents: `サッシや床など周辺部位への塗料付着汚れ`, details: `養生テープのラインが仕上がりの直線美を決めるため、シワなく真っ直ぐ貼ります。` },
+              { id: "r3", source: `${title}の下塗り・中塗り・上塗り`, target: `${title}の養生撤去・検査`, focus: `各塗布層の規定乾燥時間の遵守と均一な厚み`, prevents: `色ムラや気泡、塗膜の硬化不良`, details: `下塗り（プライマー）をしっかり塗ることで、中塗りと上塗りのノリが格段に良くなります。` }
             ],
             processes: [
-              { num: 1, title: `Weeding & Leveling`, purpose: `To lay the sheet flat and prevent punctures.`, points: `Remove root systems`, risk: `Hand cuts from debris`, riskMgmt: `Wear cut-resistant gloves` },
-              { num: 2, title: `Laying & Pinning`, purpose: `To cover the target area completely.`, points: `Secure pins every 50cm`, risk: `Hammer strike injury`, riskMgmt: `Keep eyes on target and wear boots` }
+              { num: 1, title: `高圧洗浄とケレン作業`, purpose: `塗装面の汚れやサビを落とし、塗料の密着性を高めるため。`, points: `凹凸部分や目地の中まで入念に清掃`, risk: `水圧による転倒や塗料粉塵の吸入`, riskMgmt: `防塵マスクの着用と高所作業時の安全帯使用` },
+              { num: 2, title: `マスキング養生`, purpose: `塗料が周囲に飛び散ったりはみ出したりするのを防ぐため。`, points: `マスカーテープを用い隙間なく密閉`, risk: `カッター裁断時の怪我や高所での体勢崩れ`, riskMgmt: `安定した足場確保と安全帯の完全使用` },
+              { num: 3, title: `３回塗り（下・中・上塗り）`, purpose: `耐久性、耐候性を高め、美しく均一な色彩に仕上げるため。`, points: `既定の乾燥時間を必ず確保し、薄く均一に重ねる`, risk: `有機溶剤によるガス中毒や皮膚かぶれ`, riskMgmt: `有機ガス用防毒マスクの着用と現場換気の徹底` },
+              { num: 4, title: `養生撤去と手直し検査`, purpose: `細部まで綺麗に仕上がっているか確認し引き渡すため。`, points: `テープを剥がす際の塗膜剥がれに注意し慎重に行う`, risk: `カッター使用による仕上げ面の傷つけ`, riskMgmt: `細刃カッターの刃を寝かせて慎重にカット` }
             ]
-          },
-          vi: {
+          }
+        }
+      };
+    } else if (isCarpentry) {
+      console.log("Carpentry mock generated for title:", title);
+      return {
+        translations: {
+          ja: {
             title: title,
             relationData: [
-              { id: "r1", source: `${title}: Dọn đất`, target: `${title}: Trải bạt`, focus: `Làm phẳng mặt đất và nhổ sạch cỏ`, prevents: `Rách bạt và cỏ mọc lại`, details: `Dùng cào làm phẳng đất.` }
+              { id: "r1", source: `${title}の墨出し・材料加工`, target: `${title}の骨組み・下地組み`, focus: `ミリ単位の正確な寸法測定と切り出し`, prevents: `組み立て時の歪みや接合部の隙間の発生`, details: `ノコ刃の厚み（約2〜3mm）を考慮して墨線を引き、カットするのが熟練の技術です。` },
+              { id: "r2", source: `${title}の骨組み・下地組み`, target: `${title}の面材貼り・仕上げ固定`, focus: `水平器・下げ振りを用いた完全な垂直・水平出し`, prevents: `構造全体のねじれや将来的なドア・窓の建付け不良`, details: `仮留め釘を打って対角線の長さを測り、四角形が歪んでいないか確認します。` },
+              { id: "r3", source: `${title}の面材貼り・仕上げ固定`, target: `${title}の調整・建付け確認`, focus: `面材（ボード等）の規定ピッチでの確実なビス留め`, prevents: `ビス頭の浮きや石膏ボードのひび割れ`, details: `ビスの頭が面材よりわずかに沈む程度に締め込むのがパテ処理を綺麗にするコツです。` }
             ],
             processes: [
-              { num: 1, title: `Làm đất \u0026 Dọn cỏ`, purpose: `Làm phẳng mặt nền trước khi trải.`, points: `Nhổ sạch rễ cỏ`, risk: `Chấn thương tay do đá dăm`, riskMgmt: `Đeo bao tay bảo hộ` }
+              { num: 1, title: `墨出しと木材切り出し`, purpose: `設計通りの寸法で部材を加工するため。`, points: `差し金と差金を用いた正確な直角出し`, risk: `丸ノコや手ノコ使用時の接触・切創事故`, riskMgmt: `安全カバーの機能確認と保護メガネの着用` },
+              { num: 2, title: `下地木枠の組み立て`, purpose: `壁や天井の強度を支える強固な骨組みを作るため。`, points: `当て木をして木槌で微調整し、水平を確認`, risk: `脚立上からの転倒や部材の落下`, riskMgmt: `脚立の開き止め金具の確実なロックとヘルメット着用` },
+              { num: 3, title: `石膏ボード（面材）の貼り付け`, purpose: `下地枠に面材を固定し、壁面や天井面を形成するため。`, points: `ビスの間隔（ピッチ）を周囲150mm、中央200mmに揃える`, risk: `電動ドライバーによる指先挟まれ`, riskMgmt: `ビスを支える指の位置に注意し、トルク調整を適切に行う` },
+              { num: 4, title: `隙間・建付けの微調整`, purpose: `建具がスムーズに動作し、隙間がないか確認するため。`, points: `かんなやサンドペーパーを用いた削り調整`, risk: `粉塵の吸入や刃物での削り傷`, riskMgmt: `防塵マスクの着用と刃の出具合の適切な管理` }
+            ]
+          }
+        }
+      };
+    } else if (isDemolition) {
+      console.log("Demolition mock generated for title:", title);
+      return {
+        translations: {
+          ja: {
+            title: title,
+            relationData: [
+              { id: "r1", source: `${title}の養生シート設置`, target: `${title}の手壊し解体`, focus: `防音・防塵対策としての頑丈な仮囲いとシート固定`, prevents: `近隣住宅への粉塵飛散や騒音クレーム`, details: `風の抵抗を考慮し、足場と養生シートをしっかりと緊結します。` },
+              { id: "r2", source: `${title}の手壊し解体`, target: `${title}の分別積込・搬出`, focus: `内装材や設備機器の丁寧な手作業撤去`, prevents: `混載ゴミ（混合廃棄物）の発生による処分費の高騰`, details: `リサイクル可能な金属、プラスチック、木材を徹底して現場で分別します。` },
+              { id: "r3", source: `${title}の分別積込・搬出`, target: `${title}の地盤整地・清掃`, focus: `トラックへの安全な積み込みと過積載の防止`, prevents: `輸送中の荷崩れや落下、交通違反`, details: `積載後は必ず防砂ネット（シート）を掛け、廃材が飛散しないように固定します。` }
+            ],
+            processes: [
+              { num: 1, title: `近隣養生と足場設置`, purpose: `騒音とホコリを最小限に抑え、周囲の安全を確保するため。`, points: `養生シートを隙間なく重ね合わせて貼る`, risk: `足場組立時の高所からの墜落・落下`, riskMgmt: `フルハーネス安全帯の完全着用と周囲の立ち入り禁止` },
+              { num: 2, title: `内装・設備の分別解体`, purpose: `部材ごとに分別し、環境負荷と処分費用を下げるため。`, points: `ガラス、プラスチック、金属類の分別回収`, risk: `破片による切創や釘の踏み抜き`, riskMgmt: `防穿刺仕様の安全靴と厚手の防護手袋の着用` },
+              { num: 3, title: `廃材の搬出とダンプ積込`, purpose: `解体された部材を速やかに処分場へ搬送するため。`, points: `重量バランスを考慮し平らに積み込む`, risk: `重機（バックホウ）との接触や廃材の崩落`, riskMgmt: `重機の旋回範囲への立ち入り禁止と合図の徹底` },
+              { num: 4, title: `整地と境界清掃`, purpose: `土地を綺麗な更地にし、近隣道路を清掃して引き渡すため。`, points: `コンクリートガラや釘の徹底的な拾い出し`, risk: `釘等の踏み残しによる後続事故`, riskMgmt: `磁石式集塵ツール等を用いた念入りな確認` }
             ]
           }
         }
@@ -687,7 +733,7 @@ const generateData = async (title) => {
             title: title,
             relationData: [
               { id: "r1", source: `${title}の準備・養生`, target: `${title}の設置・固定`, focus: `作業場所の安全確保と搬入経路の養生対策`, prevents: `周囲の床・壁の破損や据付位置のズレ`, details: `墨出しを確実に行い、機器の寸法に合わせた配置をあらかじめマーキングします。` },
-              { id: "r2", source: `${title}の設置・固定`, target: `${title}の接続・配管配線`, focus: `規定トルクでの強固なアンカー固定`, prevents: `稼働時の振動や配管接続部への負荷集中`, details: `配管などの接続部分に余計な引っ張り荷重がかからないよう、しっかり仮固定するのがポイントです。` },
+              { id: "r2", source: `${title}の設置・固定`, target: `${title}の接続・配管配線`, focus: `規定トルクでの強固なアンカー固定`, prevents: `稼働時の振動や配管接続部への負荷集中`, details: `配管などの接続部分に余計な引っ張り荷重がかからないよう、固定支持金物でしっかり仮固定するのがポイントです。` },
               { id: "r3", source: `${title}の接続・配管配線`, target: `${title}の検査・試運転`, focus: `接続部からのリーク（漏れ）防止と結線の確認`, prevents: `ガス漏れ、水漏れ、電気的なショートなどの重大事故`, details: `接続完了後に気密試験やテスターでの導通確認をダブルチェックし記録します。` }
             ],
             processes: [
@@ -695,24 +741,6 @@ const generateData = async (title) => {
               { num: 2, title: `本体・構造物の設置`, purpose: `機器を設計通りに強固に配置するため。`, points: `水平器による厳格な水平・垂直の調整`, risk: `重量物の落下や手元の挟まれ`, riskMgmt: `玉掛け手順の遵守と手元注意の呼びかけ` },
               { num: 3, title: `配管・電気配線の接続`, purpose: `冷媒や電気系統を漏れなく安全に開通させるため。`, points: `トルクレンチによる規定トルクでの接続`, risk: `締めすぎによるネジ破損やガスリーク`, riskMgmt: `リーク検知液での確認とチェックシートへの記録` },
               { num: 4, title: `試運転と自主点検`, purpose: `機器が設計通り作動することを確認し引き渡すため。`, points: `電流値・圧力・動作異音の計測`, risk: `稼働部や電気部への接触災害`, riskMgmt: `運転中の注意表示と安全距離の確保` }
-            ]
-          },
-          en: {
-            title: title,
-            relationData: [
-              { id: "r1", source: `${title}: Setup`, target: `${title}: Mount`, focus: `Ensure safety and protect environment`, prevents: `Damage and size deviation`, details: `Measure and mark exact anchoring locations.` }
-            ],
-            processes: [
-              { num: 1, title: `Preparation \u0026 Mounting`, purpose: `Secure unit firmly in place.`, points: `Torque check`, risk: `Heavy object fall`, riskMgmt: `Safety boots required` }
-            ]
-          },
-          vi: {
-            title: title,
-            relationData: [
-              { id: "r1", source: `${title}: Lắp đặt`, target: `${title}: Kết nối`, focus: `Cố định chắc chắn thiết bị`, prevents: `Rung lắc khi vận hành`, details: `Sử dụng gioăng chống rung.` }
-            ],
-            processes: [
-              { num: 1, title: `Chuẩn bị \u0026 Lắp đặt`, purpose: `Cố định chắc chắn thiết bị chính xác.`, points: `Kiểm tra độ cân bằng`, risk: `Rơi đồ vật`, riskMgmt: `Đội mũ bảo hộ đầy đủ` }
             ]
           }
         }
@@ -729,28 +757,10 @@ const generateData = async (title) => {
               { id: "r3", source: `${title}の調整・仕上げ`, target: `${title}の片付け・自主検査`, focus: `最終的な動作確認および結合箇所の目視・テスト`, prevents: `施主検査での指摘や引き渡し後の初期不良`, details: `自主点検チェックシートを活用し、各人が確実に項目をチェックします。` }
             ],
             processes: [
-              { num: 1, title: `施工前の準備と安全養生`, purpose: `現場周囲の保護と、本作業が安全に行える環境を整えるため。`, points: `5S（整理整頓）の徹底と作業区画の明示`, risk: `運搬中の転倒や周囲への衝突`, riskMgmt: `ヘルメット着用と作業床のクリア確保` },
+              { num: 1, title: `施工前の準備と安全養生`, purpose: `現場周囲の保護と、本作業が安全に行える環境を整えるため。`, points: `5S（整理整頓）の徹底と作業区画 of 明示`, risk: `運搬中の転倒や周囲への衝突`, riskMgmt: `ヘルメット着用と作業床のクリア確保` },
               { num: 2, title: `${title}の本施工・組み立て`, purpose: `設計図に基づき主要な施工を正確に進めるため。`, points: `手順書に沿った確実な組み立て・固定`, risk: `工具の使用ミスによる怪我`, riskMgmt: `電動工具の始業前点検と適切な保護手袋の着用` },
               { num: 3, title: `接合部の処理と機能調整`, purpose: `施工した箇所が完璧に連動・固定されるようにするため。`, points: `接続部分の緩みや微小なズレの徹底確認`, risk: `不十分な調整による動作不良や隙間の発生`, riskMgmt: `テストゲージや測定ツールによるダブルチェック` },
               { num: 4, title: `自主点検と清掃`, purpose: `引き渡し品質を確保し、現場を美しく保つため。`, points: `清掃による潜在的不具合の早期発見`, risk: `見落としや、片付け時の無理な荷崩れ`, riskMgmt: `チェックシートへの記録と順序良い資材片付け` }
-            ]
-          },
-          en: {
-            title: title,
-            relationData: [
-              { id: "r1", source: `${title}: Prep`, target: `${title}: Main work`, focus: `Safe working boundary and protection`, prevents: `Property damage and injury`, details: `Review blueprints carefully with the team.` }
-            ],
-            processes: [
-              { num: 1, title: `Site Prep \u0026 Assembly`, purpose: `Set up the structure accurately.`, points: `Check alignment and dimensions`, risk: `Tool accidents`, riskMgmt: `Inspect tools before use` }
-            ]
-          },
-          vi: {
-            title: title,
-            relationData: [
-              { id: "r1", source: `${title}: Chuẩn bị`, target: `${title}: Thi công`, focus: `Dọn dẹp mặt bằng thi công`, prevents: `Tai nạn lao động đầu giờ`, details: `Đội mũ bảo hộ và đi giày an toàn.` }
-            ],
-            processes: [
-              { num: 1, title: `Chuẩn bị \u0026 Lắp ráp`, purpose: `Thi công chính xác theo bản vẽ.`, points: `Đo đạc kích thước kỹ càng`, risk: `Dụng cụ rơi vào chân`, riskMgmt: `Đi giày bảo hộ` }
             ]
           }
         }
@@ -860,21 +870,24 @@ const generateJobWithAI = async () => {
     const enData = transObj.en || {};
     const viData = transObj.vi || {};
 
+    const jaRelation = jaData.relationData && jaData.relationData.length > 0 ? jaData.relationData : [];
+    const jaProcesses = jaData.processes && jaData.processes.length > 0 ? jaData.processes : [];
+
     const finalTranslations = {
       ja: {
         title: jaData.title || newJobTitle.trim(),
-        relationData: jaData.relationData || [],
-        processes: jaData.processes || []
+        relationData: jaRelation,
+        processes: jaProcesses
       },
       en: {
         title: enData.title || newJobTitle.trim(),
-        relationData: enData.relationData || [],
-        processes: enData.processes || []
+        relationData: enData.relationData && enData.relationData.length > 0 ? enData.relationData : jaRelation,
+        processes: enData.processes && enData.processes.length > 0 ? enData.processes : jaProcesses
       },
       vi: {
         title: viData.title || newJobTitle.trim(),
-        relationData: viData.relationData || [],
-        processes: viData.processes || []
+        relationData: viData.relationData && viData.relationData.length > 0 ? viData.relationData : jaRelation,
+        processes: viData.processes && viData.processes.length > 0 ? viData.processes : jaProcesses
       }
     };
 
