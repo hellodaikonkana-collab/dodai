@@ -1,162 +1,205 @@
-﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
 ArrowLeft, ArrowRight, Target, ShieldCheck, ChevronDown,
 ChevronUp, AlertTriangle, Loader2, Sparkles, Edit2, Save, Wrench,
-MapPin, FileText, Eye, Clock, Mic, MicOff, Volume2, X, Globe, Maximize, Minimize
+MapPin, FileText, Eye, Clock, Mic, MicOff, Volume2, X, Globe, Maximize, Minimize, Settings
 } from 'lucide-react';
 
 // --- 多言語辞書 (i18n) ---
 const i18n = {
-ja: {
-calendar: "作業記録カレンダー",
-today: "今日",
-openRecord: "記録を開く",
-noPlan: "予定なし",
-add: "追加",
-backToCalendar: "カレンダーに戻る",
-createAI: "AIで作業を作成",
-editJobName: "作業名の編集",
-location: "現場の場所",
-memo: "メモ",
-viewCount: "閲覧",
-noLocationMemo: "場所やメモは登録されていません",
-readAll: "現在のタブをすべて読み上げ",
-processMgmt: "工程管理",
-processDetail: "工程詳細",
-edit: "編集",
-cancel: "キャンセル",
-save: "保存",
-recordFlow: "工程の流れを記録します",
-aiGenerateBtn: "AIで自動生成する",
-swipeToView: "横にスワイプして工程を確認できます",
-relation: "関係性",
-tapToViewInsight: "タップして詳しい考察を見る",
-close: "閉じる",
-purpose: "観点・目的",
-prevents: "防げる事態",
-insight: "深い考察・ノウハウ",
-tapToViewDetails: "タップして詳しい手順やリスクを見る",
-points: "作業ポイント",
-risk: "安全面（リスク）",
-riskMgmt: "リスク管理",
-aiGenerating: "専門知識を生成中...",
-createThisJob: "この作業を作成する",
-addJobHint: "例: エアコンの取り付け など (必須)",
-locationHint: "現場の場所 (任意)",
-memoHint: "作業に関するメモ (任意)",
-voiceHint: "「戻る」「○日の記録を開いて」と話しかけてください",
-reading: "読み上げ中...",
-aiTitle: "AIで作業を自動生成",
-aiDesc: "の予定として追加します",
-aiPromptLang: "Japanese",
-sttLang: "ja-JP",
-ttsLang: "ja-JP",
-voiceHintText: "ja",
-backMsg: "カレンダーに戻りました。",
-noPlanMsg: "日の予定はありません。",
-todayNoPlanMsg: "今日の予定はありません。"
-},
-en: {
-calendar: "Work Record Calendar",
-today: "Today",
-openRecord: "Open",
-noPlan: "No plan",
-add: "Add",
-backToCalendar: "Back to Calendar",
-createAI: "Create with AI",
-editJobName: "Edit Job Name",
-location: "Location",
-memo: "Memo",
-viewCount: "Views",
-noLocationMemo: "No location or memo added.",
-readAll: "Read current tab",
-processMgmt: "Roadmap",
-processDetail: "Details",
-edit: "Edit",
-cancel: "Cancel",
-save: "Save",
-recordFlow: "Record your workflow",
-aiGenerateBtn: "Generate with AI",
-swipeToView: "Swipe horizontally to view",
-relation: "Relation",
-tapToViewInsight: "Tap for insights",
-close: "Close",
-purpose: "Purpose",
-prevents: "Prevents",
-insight: "Insights / Know-how",
-tapToViewDetails: "Tap for details and risks",
-points: "Key Points",
-risk: "Safety (Risks)",
-riskMgmt: "Risk Management",
-aiGenerating: "Generating expert knowledge...",
-createThisJob: "Create this job",
-addJobHint: "e.g. AC installation (Required)",
-locationHint: "Location (Optional)",
-memoHint: "Memo (Optional)",
-voiceHint: "Say 'Back' or 'Open records for the 15th'",
-reading: "Reading...",
-aiTitle: "Auto-generate with AI",
-aiDesc: "will be added as a schedule",
-aiPromptLang: "English",
-sttLang: "en-US",
-ttsLang: "en-US",
-voiceHintText: "en",
-backMsg: "Back to calendar.",
-noPlanMsg: "No schedule for this day.",
-todayNoPlanMsg: "No schedule for today."
-},
-vi: {
-calendar: "Lịch Công Việc",
-today: "Hôm nay",
-openRecord: "Mở",
-noPlan: "Trống",
-add: "Thêm",
-backToCalendar: "Quay lại lịch",
-createAI: "Tạo bằng AI",
-editJobName: "Sửa tên công việc",
-location: "Vị trí",
-memo: "Ghi chú",
-viewCount: "Lượt xem",
-noLocationMemo: "Chưa có vị trí hoặc ghi chú",
-readAll: "Đọc trang này",
-processMgmt: "Lộ trình",
-processDetail: "Chi tiết",
-edit: "Sửa",
-cancel: "Hủy",
-save: "Lưu",
-recordFlow: "Ghi lại quy trình",
-aiGenerateBtn: "Tạo tự động",
-swipeToView: "Vuốt ngang để xem",
-relation: "Mối quan hệ",
-tapToViewInsight: "Nhấn để xem phân tích",
-close: "Đóng",
-purpose: "Mục đích",
-prevents: "Phòng ngừa",
-insight: "Bí quyết",
-tapToViewDetails: "Nhấn để xem chi tiết",
-points: "Điểm chính",
-risk: "Rủi ro an toàn",
-riskMgmt: "Quản lý rủi ro",
-aiGenerating: "Đang tạo chuyên môn...",
-createThisJob: "Tạo công việc này",
-addJobHint: "VD: Lắp điều hòa (Bắt buộc)",
-locationHint: "Vị trí (Tùy chọn)",
-memoHint: "Ghi chú (Tùy chọn)",
-voiceHint: "Nói 'Quay lại' hoặc 'Mở ngày 15'",
-reading: "Đang đọc...",
-aiTitle: "Tạo tự động bằng AI",
-aiDesc: "sẽ được thêm vào lịch",
-aiPromptLang: "Vietnamese",
-sttLang: "vi-VN",
-ttsLang: "vi-VN",
-voiceHintText: "vi",
-backMsg: "Đã quay lại lịch.",
-noPlanMsg: "Không có lịch cho ngày này.",
-todayNoPlanMsg: "Không có lịch cho hôm nay."
-}
+  ja: {
+    calendar: "作業記録カレンダー",
+    today: "今日",
+    openRecord: "記録を開く",
+    noPlan: "予定なし",
+    add: "追加",
+    backToCalendar: "カレンダーに戻る",
+    createAI: "AIで作業を作成",
+    editJobName: "作業名の編集",
+    location: "現場の場所",
+    memo: "メモ",
+    viewCount: "閲覧",
+    noLocationMemo: "場所やメモは登録されていません",
+    readAll: "現在のタブをすべて読み上げ",
+    processMgmt: "工程管理",
+    processDetail: "工程詳細",
+    edit: "編集",
+    cancel: "キャンセル",
+    save: "保存",
+    recordFlow: "工程の流れを記録します",
+    aiGenerateBtn: "AIで自動生成する",
+    swipeToView: "横にスワイプして工程を確認できます",
+    relation: "関係性",
+    tapToViewInsight: "タップして詳しい考察を見る",
+    close: "閉じる",
+    purpose: "観点・目的",
+    prevents: "防げる事態",
+    insight: "深い考察・ノウハウ",
+    tapToViewDetails: "タップして詳しい手順やリスクを見る",
+    points: "作業ポイント",
+    risk: "安全面（リスク）",
+    riskMgmt: "リスク管理",
+    aiGenerating: "専門知識を生成中...",
+    createThisJob: "この作業を作成する",
+    addJobHint: "例: エアコンの取り付け など (必須)",
+    locationHint: "現場の場所 (任意)",
+    memoHint: "作業に関するメモ (任意)",
+    voiceHint: "「戻る」「○日の記録を開いて」と話しかけてください",
+    reading: "読み上げ中...",
+    aiTitle: "AIで作業を自動生成",
+    aiDesc: "の予定として追加します",
+    aiPromptLang: "Japanese",
+    sttLang: "ja-JP",
+    ttsLang: "ja-JP",
+    voiceHintText: "ja",
+    backMsg: "カレンダーに戻りました。",
+    noPlanMsg: "日の予定はありません。",
+    todayNoPlanMsg: "今日の予定はありません。",
+    apiKeySetting: "APIキー設定",
+    apiKeyDesc: "Google GeminiのAPIキーを設定すると、本物のAIによる施工計画の自動生成が有効になります（未設定時は動的モックを使用します）。",
+    apiKeyHint: "Gemini APIキーを入力してください",
+    apiKeySave: "保存する",
+    apiKeyDelete: "削除する",
+    apiKeyStatusSet: "APIキー設定済み (本物AI稼働)",
+    apiKeyStatusNone: "APIキー未設定 (モックモード)"
+  },
+  en: {
+    calendar: "Work Record Calendar",
+    today: "Today",
+    openRecord: "Open",
+    noPlan: "No plan",
+    add: "Add",
+    backToCalendar: "Back to Calendar",
+    createAI: "Create with AI",
+    editJobName: "Edit Job Name",
+    location: "Location",
+    memo: "Memo",
+    viewCount: "Views",
+    noLocationMemo: "No location or memo added.",
+    readAll: "Read current tab",
+    processMgmt: "Roadmap",
+    processDetail: "Details",
+    edit: "Edit",
+    cancel: "Cancel",
+    save: "Save",
+    recordFlow: "Record your workflow",
+    aiGenerateBtn: "Generate with AI",
+    swipeToView: "Swipe horizontally to view",
+    relation: "Relation",
+    tapToViewInsight: "Tap for insights",
+    close: "Close",
+    purpose: "Purpose",
+    prevents: "Prevents",
+    insight: "Insights / Know-how",
+    tapToViewDetails: "Tap for details and risks",
+    points: "Key Points",
+    risk: "Safety (Risks)",
+    riskMgmt: "Risk Management",
+    aiGenerating: "Generating expert knowledge...",
+    createThisJob: "Create this job",
+    addJobHint: "e.g. AC installation (Required)",
+    locationHint: "Location (Optional)",
+    memoHint: "Memo (Optional)",
+    voiceHint: "Say 'Back' or 'Open records for the 15th'",
+    reading: "Reading...",
+    aiTitle: "Auto-generate with AI",
+    aiDesc: "will be added as a schedule",
+    aiPromptLang: "English",
+    sttLang: "en-US",
+    ttsLang: "en-US",
+    voiceHintText: "en",
+    backMsg: "Back to calendar.",
+    noPlanMsg: "No schedule for this day.",
+    todayNoPlanMsg: "No schedule for today.",
+    apiKeySetting: "API Key Settings",
+    apiKeyDesc: "Enter your Google Gemini API key to enable real AI generation of construction roadmaps and details (uses mock mode if unset).",
+    apiKeyHint: "Enter Gemini API key",
+    apiKeySave: "Save Key",
+    apiKeyDelete: "Delete Key",
+    apiKeyStatusSet: "API Key Set (Real AI active)",
+    apiKeyStatusNone: "API Key Unset (Mock mode)"
+  },
+  vi: {
+    calendar: "Lịch Công Việc",
+    today: "Hôm nay",
+    openRecord: "Mở",
+    noPlan: "Trống",
+    add: "Thêm",
+    backToCalendar: "Quay lại lịch",
+    createAI: "Tạo bằng AI",
+    editJobName: "Sửa tên công việc",
+    location: "Vị trí",
+    memo: "Ghi chú",
+    viewCount: "Lượt xem",
+    noLocationMemo: "Chưa có vị trí hoặc ghi chú",
+    readAll: "Đọc trang này",
+    processMgmt: "Lộ trình",
+    processDetail: "Chi tiết",
+    edit: "Sửa",
+    cancel: "Hủy",
+    save: "Lưu",
+    recordFlow: "Ghi lại quy trình",
+    aiGenerateBtn: "Tạo tự động",
+    swipeToView: "Vuốt ngang để xem",
+    relation: "Mối quan hệ",
+    tapToViewInsight: "Nhấn để xem phân tích",
+    close: "Đóng",
+    purpose: "Mục đích",
+    prevents: "Phòng ngừa",
+    insight: "Bí quyết",
+    tapToViewDetails: "Nhấn để xem chi tiết",
+    points: "Điểm chính",
+    risk: "Rủi ro an toàn",
+    riskMgmt: "Quản lý rủi ro",
+    aiGenerating: "Đang tạo chuyên môn...",
+    createThisJob: "Tạo công việc này",
+    addJobHint: "VD: Lắp điều hòa (Bắt buộc)",
+    locationHint: "Vị trí (Tùy chọn)",
+    memoHint: "Ghi chú (Tùy chọn)",
+    voiceHint: "Nói 'Quay lại' hoặc 'Mở ngày 15'",
+    reading: "Đang đọc...",
+    aiTitle: "Tạo tự động bằng AI",
+    aiDesc: "sẽ được thêm vào lịch",
+    aiPromptLang: "Vietnamese",
+    sttLang: "vi-VN",
+    ttsLang: "vi-VN",
+    voiceHintText: "vi",
+    backMsg: "Đã quay lại lịch.",
+    noPlanMsg: "Không có lịch cho ngày này.",
+    todayNoPlanMsg: "Không có lịch cho hôm nay.",
+    apiKeySetting: "Cài đặt API Key",
+    apiKeyDesc: "Nhập Google Gemini API key để kích hoạt tính năng tự động tạo bằng AI thực tế (sẽ sử dụng mô hình giả lập nếu chưa thiết lập).",
+    apiKeyHint: "Nhập Gemini API key",
+    apiKeySave: "Lưu Key",
+    apiKeyDelete: "Xóa Key",
+    apiKeyStatusSet: "Đã thiết lập API Key (AI đang chạy)",
+    apiKeyStatusNone: "Chưa thiết lập API Key (Chế độ giả lập)"
+  }
+};
+export default function App() {
+const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+const [tempApiKey, setTempApiKey] = useState("");
+const [hasApiKey, setHasApiKey] = useState(() => !!localStorage.getItem("gemini_api_key"));
+
+const handleSaveApiKey = () => {
+  if (tempApiKey.trim()) {
+    localStorage.setItem("gemini_api_key", tempApiKey.trim());
+    setHasApiKey(true);
+  } else {
+    localStorage.removeItem("gemini_api_key");
+    setHasApiKey(false);
+  }
+  setShowApiKeyModal(false);
+  setTempApiKey("");
 };
 
-export default function App() {
+const handleDeleteApiKey = () => {
+  localStorage.removeItem("gemini_api_key");
+  setHasApiKey(false);
+  setShowApiKeyModal(false);
+  setTempApiKey("");
+};
+
 const [lang, setLang] = useState('ja');
 const t = (key) => i18n[lang][key] || i18n['ja'][key];
 
@@ -1174,6 +1217,14 @@ const renderRelationFlow = (data, title) => (
 
           {/* 音声認識スタートボタン */}
           <button 
+            onClick={() => { setTempApiKey(localStorage.getItem("gemini_api_key") || ""); setShowApiKeyModal(true); }}
+            className={`p-2.5 rounded-full transition-all shadow-sm ${hasApiKey ? 'bg-indigo-100 text-indigo-600 ring-2 ring-indigo-300' : 'bg-gray-100 text-gray-500 hover:bg-indigo-50 hover:text-indigo-600'}`}
+            title={t('apiKeySetting')}
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+
+          <button 
             onClick={toggleListening}
             className={`p-2.5 rounded-full transition-all shadow-sm ${isListening ? 'bg-rose-100 text-rose-600 ring-2 ring-rose-400 animate-pulse' : 'bg-gray-100 text-gray-500 hover:bg-indigo-50 hover:text-indigo-600'}`}
           >
@@ -1367,6 +1418,60 @@ const renderRelationFlow = (data, title) => (
             )}
           </div>
         </main>
+      )}
+      {/* APIキー設定用モーダル */}
+      {showApiKeyModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl space-y-6">
+            <div>
+              <h3 className="text-lg md:text-xl font-black text-gray-800 flex items-center gap-2">
+                <Settings className="w-5 h-5 text-indigo-600 animate-spin" style={{ animationDuration: '3s' }} />
+                {t('apiKeySetting')}
+              </h3>
+              <p className="text-xs font-bold text-gray-500 mt-2 leading-relaxed">
+                {t('apiKeyDesc')}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <input 
+                type="password" 
+                placeholder={t('apiKeyHint')}
+                value={tempApiKey}
+                onChange={e => setTempApiKey(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 font-bold text-slate-800 text-sm focus:outline-none focus:border-indigo-500"
+              />
+              <div className="flex justify-between items-center px-1">
+                <span className={`text-[10px] font-black uppercase tracking-wider ${hasApiKey ? 'text-emerald-500' : 'text-amber-500'}`}>
+                  {hasApiKey ? t('apiKeyStatusSet') : t('apiKeyStatusNone')}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex gap-2 justify-end pt-2">
+              <button 
+                onClick={() => { setShowApiKeyModal(false); setTempApiKey(""); }}
+                className="px-4 py-2 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 text-sm"
+              >
+                {t('cancel')}
+              </button>
+              {hasApiKey && (
+                <button 
+                  onClick={handleDeleteApiKey}
+                  className="px-4 py-2 bg-rose-50 text-rose-600 rounded-xl font-bold hover:bg-rose-100 text-sm border border-rose-100"
+                >
+                  {t('apiKeyDelete')}
+                </button>
+              )}
+              <button 
+                onClick={handleSaveApiKey}
+                className="px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 text-sm"
+              >
+                {t('apiKeySave')}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
