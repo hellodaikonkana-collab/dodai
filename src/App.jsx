@@ -626,61 +626,144 @@ catch (e) { console.error(e); }
 }
 };
 
-// タイトルからAIデータを生成する共通関数（タイトルを工程内容に反映、APIキーはlocalStorage対応）
+// タイトルからAIデータを生成する共通関数（キーワード自動判定の高品質モックデータ & localStorage APIキー対応）
 const generateData = async (title) => {
   const apiKey = localStorage.getItem("gemini_api_key") || "";
-  console.log("generateData called with title:", title, "apiKey exists:", !!apiKey);
+  console.log("generateData called. Title:", title, "Has API Key:", !!apiKey);
   
   if (!apiKey) {
-    console.log("No API key found in localStorage. Using mock data generation.");
+    console.log("No API key found. Generating title-aware mock data.");
     await new Promise(resolve => setTimeout(resolve, 1200));
-    const mockResult = {
-      translations: {
-        ja: {
-          title: title,
-          relationData: [
-            { id: "r1", source: `${title}の準備・養生`, target: `${title}の設置・固定`, focus: `${title}作業に必要な環境整備と設置位置の正確な把握`, prevents: `周囲の損傷や設置ミスによる手戻りを防ぐ`, details: `施工前の墨出しと搬入経路の確保を確実に行うことがポイントです。` },
-            { id: "r2", source: `${title}の設置・固定`, target: `${title}の接続・配線`, focus: `確実な固定による振動・ズレの防止`, prevents: `稼働時の異常や接続部への過負荷を防ぐ`, details: `規定トルクでの締め付け管理を徹底してください。` },
-            { id: "r3", source: `${title}の接続・配線`, target: `${title}の検査・確認`, focus: `接続部の気密・導通確認による品質保証`, prevents: `漏れや短絡などの重大な事故を防ぐ`, details: `チェックシートを用いたダブルチェックを実施してください。` }
-          ],
-          processes: [
-            { num: 1, title: `${title}：現場養生と準備`, purpose: `周囲を保護し、${title}作業を円滑に進めるため。`, points: `養生シートの確実な敷設`, risk: `搬入時の荷崩れ`, riskMgmt: `ヘルメット着用と声掛け確認` },
-            { num: 2, title: `${title}：本体の設置工事`, purpose: `正確な位置に据え付け、${title}の精度を確保するため。`, points: `水平器による水平確認`, risk: `重量物による足元事故`, riskMgmt: `安全靴の着用と2人作業` },
-            { num: 3, title: `${title}：配管・配線の接続`, purpose: `${title}に必要な各ラインを確実に構築するため。`, points: `規定トルクでの締付け`, risk: `接続不良による漏れ`, riskMgmt: `接続後の気密・導通テスト` },
-            { num: 4, title: `${title}：試運転と最終確認`, purpose: `${title}が設計通りの性能で稼働するか確認するため。`, points: `電流・温度・動作の計測`, risk: `稼働部への接触`, riskMgmt: `運転中の安全距離の確保` }
-          ]
-        },
-        en: {
-          title: title,
-          relationData: [
-            { id: "r1", source: `${title}: Prep`, target: `${title}: Install`, focus: `Site preparation and accurate positioning`, prevents: `Damage and installation rework`, details: `Verify measurements before installation.` },
-            { id: "r2", source: `${title}: Install`, target: `${title}: Connect`, focus: `Secure mounting to prevent movement`, prevents: `Vibration and connection fatigue`, details: `Apply specified torque to all fasteners.` }
-          ],
-          processes: [
-            { num: 1, title: `${title}: Site Prep`, purpose: `Protect surroundings and prepare for work.`, points: `Lay protective sheets carefully`, risk: `Falling materials`, riskMgmt: `Wear safety helmet` },
-            { num: 2, title: `${title}: Installation`, purpose: `Mount the unit accurately at the designated position.`, points: `Check level alignment`, risk: `Heavy object injury`, riskMgmt: `Use safety boots and 2-person lift` },
-            { num: 3, title: `${title}: Connection`, purpose: `Establish all required connections for the job.`, points: `Apply correct torque`, risk: `Connection leaks`, riskMgmt: `Post-connection leak test` }
-          ]
-        },
-        vi: {
-          title: title,
-          relationData: [
-            { id: "r1", source: `${title}: Chuẩn bị`, target: `${title}: Lắp đặt`, focus: `Đảm bảo môi trường và vị trí chính xác`, prevents: `Trầy xước và làm lại do sai lệch`, details: `Kiểm tra kỹ trước khi lắp đặt.` }
-          ],
-          processes: [
-            { num: 1, title: `${title}: Chuẩn bị`, purpose: `Bảo vệ khu vực và chuẩn bị làm việc.`, points: `Trải bạt cẩn thận`, risk: `Rơi vật liệu`, riskMgmt: `Đội mũ bảo hộ` },
-            { num: 2, title: `${title}: Lắp đặt`, purpose: `Cố định thiết bị chính xác.`, points: `Kiểm tra độ cân bằng`, risk: `Thiết bị nặng rơi`, riskMgmt: `Đi giày bảo hộ và làm 2 người` }
-          ]
+    
+    // タイトルのキーワードから施工ジャンルを判定
+    const isWeedBarrier = /防草|雑草|庭|草刈|砂利|シート/i.test(title);
+    const isPlumbingOrEquipment = /配管|配線|室外機|空調|供給|埋設|敷設|エアコン|設備|電気|接続/i.test(title);
+    
+    if (isWeedBarrier) {
+      console.log("Weed barrier mock generated for title:", title);
+      return {
+        translations: {
+          ja: {
+            title: title,
+            relationData: [
+              { id: "r1", source: `${title}の整地・下地作り`, target: `${title}のシート敷設`, focus: `平滑な地面作りと石や雑草の根の完全な除去`, prevents: `シートの突起による破れや隙間からの雑草の再発芽`, details: `転圧プレートやレーキを使って地面をできる限り平らに均すことがシートの寿命を延ばす秘訣です。` },
+              { id: "r2", source: `${title}のシート敷設`, target: `${title}の固定・ピン留め`, focus: `十分な重ね代（10cm以上）の確保とめくれ防止の調整`, prevents: `シート同士の隙間からの雑草発芽や強風時のめくれ上がり`, details: `重ね部には専用の防草テープを貼ることで遮光性を完全に維持し、隙間からの雑草発芽を徹底して防ぎます。` },
+              { id: "r3", source: `${title}の固定・ピン留め`, target: `${title}の砂利敷き・仕上げ`, focus: `規定間隔での固定ピン打ちと端部の確実な処理`, prevents: `経年劣化による端からのシートの浮きや紫外線劣化`, details: `シート露出部分を極力なくすように砂利を厚さ3〜5cm程度で均等に敷き詰めます。` }
+            ],
+            processes: [
+              { num: 1, title: `施工前の除草と整地`, purpose: `シートを平らに密着させ、雑草の突き抜けを防ぐため。`, points: `草の根の除去と平滑な地盤作り`, risk: `埋設物や石による怪我やシート破損`, riskMgmt: `安全靴・防護手袋の着用と障害物の事前確認` },
+              { num: 2, title: `防草シートの展開と裁断`, purpose: `隙間なく地面を覆い、日光を完全に遮断するため。`, points: `障害物のキワは少し長めに残してカット`, risk: `カッター使用時の手元の怪我`, riskMgmt: `防刃手袋の着用と進行方向に手を出さないこと` },
+              { num: 3, title: `固定ピン打ちとテープ処理`, purpose: `シートを地面に強固に固定し、めくれやズレを防ぐため。`, points: `重ね代10cm以上の確保と50cm間隔でのピン留め`, risk: `ハンマー打撃時の指の挟まれやピンの跳ね返り`, riskMgmt: `保護メガネ着用とハンマーの確実な握り` },
+              { num: 4, title: `砂利の敷き均しと最終点検`, purpose: `シートを紫外線劣化から守り、景観を美しく仕上げるため。`, points: `厚さ3〜5cmを目安に均等に敷き詰める`, risk: `重労働による腰痛`, riskMgmt: `無理な姿勢を避け、一輪車等を活用した複数人での運搬` }
+            ]
+          },
+          en: {
+            title: title,
+            relationData: [
+              { id: "r1", source: `${title}: Soil Prep`, target: `${title}: Sheet Laying`, focus: `Leveling soil and removing weeds`, prevents: `Sheet damage and weed regrowth`, details: `Carefully remove stones and level with a rake.` },
+              { id: "r2", source: `${title}: Sheet Laying`, target: `${title}: Pinning`, focus: `Securing overlapping areas (10cm+)`, prevents: `Gaps and wind uplift`, details: `Use tape on joints for maximum light blocking.` }
+            ],
+            processes: [
+              { num: 1, title: `Weeding & Leveling`, purpose: `To lay the sheet flat and prevent punctures.`, points: `Remove root systems`, risk: `Hand cuts from debris`, riskMgmt: `Wear cut-resistant gloves` },
+              { num: 2, title: `Laying & Pinning`, purpose: `To cover the target area completely.`, points: `Secure pins every 50cm`, risk: `Hammer strike injury`, riskMgmt: `Keep eyes on target and wear boots` }
+            ]
+          },
+          vi: {
+            title: title,
+            relationData: [
+              { id: "r1", source: `${title}: Dọn đất`, target: `${title}: Trải bạt`, focus: `Làm phẳng mặt đất và nhổ sạch cỏ`, prevents: `Rách bạt và cỏ mọc lại`, details: `Dùng cào làm phẳng đất.` }
+            ],
+            processes: [
+              { num: 1, title: `Làm đất \u0026 Dọn cỏ`, purpose: `Làm phẳng mặt nền trước khi trải.`, points: `Nhổ sạch rễ cỏ`, risk: `Chấn thương tay do đá dăm`, riskMgmt: `Đeo bao tay bảo hộ` }
+            ]
+          }
         }
-      }
-    };
-    console.log("Mock data generated successfully:", mockResult);
-    return mockResult;
+      };
+    } else if (isPlumbingOrEquipment) {
+      console.log("Plumbing/Equipment mock generated for title:", title);
+      return {
+        translations: {
+          ja: {
+            title: title,
+            relationData: [
+              { id: "r1", source: `${title}の準備・養生`, target: `${title}の設置・固定`, focus: `作業場所の安全確保と搬入経路の養生対策`, prevents: `周囲の床・壁の破損や据付位置のズレ`, details: `墨出しを確実に行い、機器の寸法に合わせた配置をあらかじめマーキングします。` },
+              { id: "r2", source: `${title}の設置・固定`, target: `${title}の接続・配管配線`, focus: `規定トルクでの強固なアンカー固定`, prevents: `稼働時の振動や配管接続部への負荷集中`, details: `配管などの接続部分に余計な引っ張り荷重がかからないよう、しっかり仮固定するのがポイントです。` },
+              { id: "r3", source: `${title}の接続・配管配線`, target: `${title}の検査・試運転`, focus: `接続部からのリーク（漏れ）防止と結線の確認`, prevents: `ガス漏れ、水漏れ、電気的なショートなどの重大事故`, details: `接続完了後に気密試験やテスターでの導通確認をダブルチェックし記録します。` }
+            ],
+            processes: [
+              { num: 1, title: `現場養生と機材の搬入`, purpose: `施工エリア周辺の保護とスムーズな作業開始のため。`, points: `適切な養生シートの敷設`, risk: `重量物搬入時の荷崩れや腰痛`, riskMgmt: `複数人での声掛け運搬とヘルメット・安全靴の着用` },
+              { num: 2, title: `本体・構造物の設置`, purpose: `機器を設計通りに強固に配置するため。`, points: `水平器による厳格な水平・垂直の調整`, risk: `重量物の落下や手元の挟まれ`, riskMgmt: `玉掛け手順の遵守と手元注意の呼びかけ` },
+              { num: 3, title: `配管・電気配線の接続`, purpose: `冷媒や電気系統を漏れなく安全に開通させるため。`, points: `トルクレンチによる規定トルクでの接続`, risk: `締めすぎによるネジ破損やガスリーク`, riskMgmt: `リーク検知液での確認とチェックシートへの記録` },
+              { num: 4, title: `試運転と自主点検`, purpose: `機器が設計通り作動することを確認し引き渡すため。`, points: `電流値・圧力・動作異音の計測`, risk: `稼働部や電気部への接触災害`, riskMgmt: `運転中の注意表示と安全距離の確保` }
+            ]
+          },
+          en: {
+            title: title,
+            relationData: [
+              { id: "r1", source: `${title}: Setup`, target: `${title}: Mount`, focus: `Ensure safety and protect environment`, prevents: `Damage and size deviation`, details: `Measure and mark exact anchoring locations.` }
+            ],
+            processes: [
+              { num: 1, title: `Preparation \u0026 Mounting`, purpose: `Secure unit firmly in place.`, points: `Torque check`, risk: `Heavy object fall`, riskMgmt: `Safety boots required` }
+            ]
+          },
+          vi: {
+            title: title,
+            relationData: [
+              { id: "r1", source: `${title}: Lắp đặt`, target: `${title}: Kết nối`, focus: `Cố định chắc chắn thiết bị`, prevents: `Rung lắc khi vận hành`, details: `Sử dụng gioăng chống rung.` }
+            ],
+            processes: [
+              { num: 1, title: `Chuẩn bị \u0026 Lắp đặt`, purpose: `Cố định chắc chắn thiết bị chính xác.`, points: `Kiểm tra độ cân bằng`, risk: `Rơi đồ vật`, riskMgmt: `Đội mũ bảo hộ đầy đủ` }
+            ]
+          }
+        }
+      };
+    } else {
+      console.log("Generic construction mock generated for title:", title);
+      return {
+        translations: {
+          ja: {
+            title: title,
+            relationData: [
+              { id: "r1", source: `${title}の準備・養生`, target: `${title}の主要施工`, focus: `KY（危険予知）の実施と施工エリアの保護確認`, prevents: `作業開始直後の不安全行動や現場周辺のキズ防止`, details: `全員で作業手順書を確認し、役割分担を明確にすることが施工品質の基本です。` },
+              { id: "r2", source: `${title}の主要施工`, target: `${title}の調整・仕上げ`, focus: `基準墨に沿った厳格な寸法測定と正確な組み立て`, prevents: `部材のズレややり直し（手戻り）の発生`, details: `各工程の節目で測定器具を用いた検査を徹底します。` },
+              { id: "r3", source: `${title}の調整・仕上げ`, target: `${title}の片付け・自主検査`, focus: `最終的な動作確認および結合箇所の目視・テスト`, prevents: `施主検査での指摘や引き渡し後の初期不良`, details: `自主点検チェックシートを活用し、各人が確実に項目をチェックします。` }
+            ],
+            processes: [
+              { num: 1, title: `施工前の準備と安全養生`, purpose: `現場周囲の保護と、本作業が安全に行える環境を整えるため。`, points: `5S（整理整頓）の徹底と作業区画の明示`, risk: `運搬中の転倒や周囲への衝突`, riskMgmt: `ヘルメット着用と作業床のクリア確保` },
+              { num: 2, title: `${title}の本施工・組み立て`, purpose: `設計図に基づき主要な施工を正確に進めるため。`, points: `手順書に沿った確実な組み立て・固定`, risk: `工具の使用ミスによる怪我`, riskMgmt: `電動工具の始業前点検と適切な保護手袋の着用` },
+              { num: 3, title: `接合部の処理と機能調整`, purpose: `施工した箇所が完璧に連動・固定されるようにするため。`, points: `接続部分の緩みや微小なズレの徹底確認`, risk: `不十分な調整による動作不良や隙間の発生`, riskMgmt: `テストゲージや測定ツールによるダブルチェック` },
+              { num: 4, title: `自主点検と清掃`, purpose: `引き渡し品質を確保し、現場を美しく保つため。`, points: `清掃による潜在的不具合の早期発見`, risk: `見落としや、片付け時の無理な荷崩れ`, riskMgmt: `チェックシートへの記録と順序良い資材片付け` }
+            ]
+          },
+          en: {
+            title: title,
+            relationData: [
+              { id: "r1", source: `${title}: Prep`, target: `${title}: Main work`, focus: `Safe working boundary and protection`, prevents: `Property damage and injury`, details: `Review blueprints carefully with the team.` }
+            ],
+            processes: [
+              { num: 1, title: `Site Prep \u0026 Assembly`, purpose: `Set up the structure accurately.`, points: `Check alignment and dimensions`, risk: `Tool accidents`, riskMgmt: `Inspect tools before use` }
+            ]
+          },
+          vi: {
+            title: title,
+            relationData: [
+              { id: "r1", source: `${title}: Chuẩn bị`, target: `${title}: Thi công`, focus: `Dọn dẹp mặt bằng thi công`, prevents: `Tai nạn lao động đầu giờ`, details: `Đội mũ bảo hộ và đi giày an toàn.` }
+            ],
+            processes: [
+              { num: 1, title: `Chuẩn bị \u0026 Lắp ráp`, purpose: `Thi công chính xác theo bản vẽ.`, points: `Đo đạc kích thước kỹ càng`, risk: `Dụng cụ rơi vào chân`, riskMgmt: `Đi giày bảo hộ` }
+            ]
+          }
+        }
+      };
+    }
   } else {
-    console.log("API key found. Calling Gemini API...");
-    const systemPrompt = `You are DODAI, an AI assistant for construction site workflow planning.
-Generate a structured roadmap (relationData) and detailed steps (processes) in Japanese, English, and Vietnamese.
-Ensure relationData has 3 items, and processes has 4 items.`;
+    console.log("Gemini API key found. Calling Google Generative AI...");
+    const systemPrompt = `You are DODAI, an expert AI construction site manager and assistant.
+Your task is to automatically analyze the given construction job name (Task) and generate a professional roadmap (relationData) and detailed steps (processes).
+You must output in Japanese, English, and Vietnamese.
+Ensure relationData has exactly 3 steps showing sequential dependencies (source to target) with appropriate focus, prevents, and details.
+Ensure processes has exactly 4 steps outlining the concrete construction process with purpose, points, risk, and riskMgmt.
+Ensure the details, purpose, points, risk, and riskMgmt are highly relevant, professional, and contain expert tips tailored specifically to the given task (do not use generic plumbing steps if the task is weeding or carpentry, etc.).`;
     const userQuery = `Task: ${title}\nPlease output the roadmap and details.`;
     const baseSchema = {
       type: "OBJECT",
@@ -763,182 +846,71 @@ Ensure relationData has 3 items, and processes has 4 items.`;
   }
 };
 const generateJobWithAI = async () => {
-if (!newJobTitle.trim() || !targetDateForNewJob) return;
-setIsGenerating(true);
-setErrorMsg(null);
+  if (!newJobTitle.trim() || !targetDateForNewJob) return;
+  setIsGenerating(true);
+  setErrorMsg(null);
 
-try {
-const apiKey = "";
-let data = null;
+  try {
+    const data = await generateData(newJobTitle.trim());
+    console.log("generateJobWithAI raw data returned:", data);
 
-if (!apiKey) {
-// APIキーが無い場合のモックデータ処理
-await new Promise(resolve => setTimeout(resolve, 1500));
-data = {
-  translations: {
-    ja: {
-      title: newJobTitle,
-      relationData: [
-        { id: "r1", source: "事前準備・現場養生", target: "本体の設置・固定", focus: "作業環境の安全確保と、設置位置の寸法ズレ防止", prevents: "周囲の破損や、据付不良による手戻り", details: "施工前の墨出しと搬入経路の確保を確実行うことが熟練のポイントです。" },
-        { id: "r2", source: "本体の設置・固定", target: "配管・配線の接続", focus: "強固な固定を行い、振動による弛みを防ぐ", prevents: "稼働時の異音発生や、配管接続部への余計な負荷集中", details: "アンカーボルトの規定トルクでの締め付けトルク管理を徹底してください。" },
-        { id: "r3", source: "配管・配線の接続", target: "試運転・自主検査", focus: "気密試験や結線状態の確認を行い、品質を保証する", prevents: "ガス漏れ、水漏れ、短絡（ショート）などの重大な事故", details: "自主検査のチェックシートを用いてダブルチェックを実施してください。" }
-      ],
-      processes: [
-        { num: 1, title: "現場養生と機材の搬入", purpose: "周囲の床や壁を傷つけないよう保護し、円滑な作業を行うため。", points: "確実な養生シート敷き", risk: "荷崩れによる怪我", riskMgmt: "ヘルメットの完全着用" },
-        { num: 2, title: "本体機器の据付工事", purpose: "機器を正確な設計位置に据え付け、将来的な不具合を防ぐため。", points: "水平器による平行調整", risk: "重量物の足元落下", riskMgmt: "安全靴の着用と声掛け" },
-        { num: 3, title: "配管・電気配線接続", purpose: "冷媒ガスや電気の確実な供給ラインを構築し、リークを防ぐため。", points: "規定トルクでの締付", risk: "ガスの微小リーク", riskMgmt: "漏れ検知スプレー使用" },
-        { num: 4, title: "試運転調整と最終確認", purpose: "初期不具合がないか、設計通りの性能が出ているかを測定確認するため。", points: "運転電流と温度の計測", risk: "稼働部への巻き込み", riskMgmt: "運転中の回転部注意" }
-      ]
-    },
-    en: {
-      title: newJobTitle,
-      relationData: [
-        { id: "r1", source: "Site Tarping", target: "Unit Mounting", focus: "Ensure environment protection and avoid size deviation", prevents: "Damaging walls and rework of installation", details: "Double-check measurements before securing the anchor bolts." },
-        { id: "r2", source: "Unit Mounting", target: "Piping & Wiring", focus: "Solid fixation to prevent loosening by vibration", prevents: "Abnormal noise and fatigue on pipe connections", details: "Use torque wrench for precise fastening." }
-      ],
-      processes: [
-        { num: 1, title: "Preparation & Safety Setup", purpose: "To protect the site and secure a safe working environment.", points: "Check safety gear", risk: "Falling hazards", riskMgmt: "Use safety harness" },
-        { num: 2, title: "Mounting the Unit", purpose: "To secure the main unit firmly at the designated location.", points: "Horizontal alignment", risk: "Heavy object drops", riskMgmt: "Safety boots required" },
-        { num: 3, title: "Piping & Connection", purpose: "To connect refrigerant lines and electric wiring without leaks.", points: "Torque control", risk: "Gas leakage", riskMgmt: "Soap bubble check" }
-      ]
-    },
-    vi: {
-      title: newJobTitle,
-      relationData: [
-        { id: "r1", source: "Chuẩn bị hiện trường", target: "Lắp đặt thiết bị", focus: "Đảm bảo môi trường an toàn và chính xác vị trí", prevents: "Trầy xước tường và làm lại do lắp sai lệch", details: "Kiểm tra kỹ kích thước trước khi cố định máy." }
-      ],
-      processes: [
-        { num: 1, title: "Chuẩn bị & An toàn", purpose: "Che chắn hiện trường và chuẩn bị khu vực làm việc an toàn.", points: "Trải bạt cẩn thận", risk: "Rơi đồ vật", riskMgmt: "Đội mũ bảo hộ" },
-        { num: 2, title: "Lắp đặt thiết bị", purpose: "Cố định thiết bị chính xác tại vị trí thiết kế.", points: "Đo độ cân bằng", risk: "Thiết bị nặng rơi", riskMgmt: "Đi giày bảo hộ" }
-      ]
-    }
+    // レスポンスの構造を正規化 (translationsキーがない場合にも対応)
+    const transObj = data?.translations || data || {};
+    const jaData = transObj.ja || {};
+    const enData = transObj.en || {};
+    const viData = transObj.vi || {};
+
+    const finalTranslations = {
+      ja: {
+        title: jaData.title || newJobTitle.trim(),
+        relationData: jaData.relationData || [],
+        processes: jaData.processes || []
+      },
+      en: {
+        title: enData.title || newJobTitle.trim(),
+        relationData: enData.relationData || [],
+        processes: enData.processes || []
+      },
+      vi: {
+        title: viData.title || newJobTitle.trim(),
+        relationData: viData.relationData || [],
+        processes: viData.processes || []
+      }
+    };
+
+    const newJobId = `job_${Date.now()}`;
+    const newJob = {
+      id: newJobId,
+      title: newJobTitle.trim(),
+      location: newJobLocation,
+      memo: newJobMemo,
+      type: 'dynamic',
+      translations: finalTranslations,
+      relationData: finalTranslations.ja.relationData,
+      processes: finalTranslations.ja.processes,
+      viewCount: 0,
+      lastViewedAt: null
+    };
+
+    const targetKey = formatDateKey(targetDateForNewJob);
+    setJobs(prev => {
+      const next = { ...prev };
+      if (!next[targetKey]) next[targetKey] = [];
+      next[targetKey] = [...next[targetKey], newJob];
+      return next;
+    });
+
+    handleSelectDate(targetDateForNewJob, newJobId);
+    setNewJobTitle(""); setNewJobLocation(""); setNewJobMemo("");
+    setShowNewJobForm(false); setTargetDateForNewJob(null);
+
+  } catch (error) {
+    console.error("AI Generation failed during job creation:", error);
+    setErrorMsg(error.message || "Error generating job roadmap");
+  } finally {
+    setIsGenerating(false);
   }
 };
-} else {
-// 本物の Gemini API 連携ロジックを完全復元
-const systemPrompt = `System prompt for DODAI application...`;
-const userQuery = `Task: ${newJobTitle}\nPlease output the roadmap and details.`;
-const baseSchema = {
-type: "OBJECT",
-properties: {
-title: { type: "STRING" },
-relationData: {
-type: "ARRAY",
-items: {
-type: "OBJECT",
-properties: {
-id: { type: "STRING" },
-source: { type: "STRING" },
-target: { type: "STRING" },
-focus: { type: "STRING" },
-prevents: { type: "STRING" },
-details: { type: "STRING" }
-}
-}
-},
-processes: {
-type: "ARRAY",
-items: {
-type: "OBJECT",
-properties: {
-num: { type: "INTEGER" },
-title: { type: "STRING" },
-purpose: { type: "STRING" },
-points: { type: "STRING" },
-risk: { type: "STRING" },
-riskMgmt: { type: "STRING" }
-}
-}
-}
-}
-};
-
-const payload = {
-contents: [{ parts: [{ text: userQuery }] }],
-systemInstruction: { parts: [{ text: systemPrompt }] },
-generationConfig: {
-responseMimeType: "application/json",
-responseSchema: {
-type: "OBJECT",
-properties: {
-translations: {
-type: "OBJECT",
-properties: {
-ja: baseSchema,
-en: baseSchema,
-vi: baseSchema
-}
-}
-}
-}
-}
-};
-
-let response = null;
-let retries = 5;
-let delay = 1000;
-
-while (retries > 0) {
-try {
-const res = await
-fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
-{
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify(payload)
-});
-if (!res.ok) throw new Error("API error");
-response = await res.json();
-break;
-} catch (e) {
-retries--;
-if (retries === 0) throw e;
-await new Promise(r => setTimeout(r, delay));
-delay *= 2;
-}
-}
-
-const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
-const responseData = JSON.parse(text);
-data = responseData;
-}
-
-const newJobId = `job_${Date.now()}`;
-const newJob = {
-id: newJobId,
-title: newJobTitle,
-location: newJobLocation,
-memo: newJobMemo,
-type: 'dynamic',
-translations: data.translations,
-viewCount: 0,
-lastViewedAt: null
-};
-
-// 基本のタイトル・データも同期して初期設定
-newJob.relationData = displayRelationData(newJob);
-newJob.processes = displayProcesses(newJob);
-
-const targetKey = formatDateKey(targetDateForNewJob);
-setJobs(prev => {
-const next = { ...prev };
-if (!next[targetKey]) next[targetKey] = [];
-next[targetKey] = [...next[targetKey], newJob];
-return next;
-});
-
-handleSelectDate(targetDateForNewJob, newJobId);
-setNewJobTitle(""); setNewJobLocation(""); setNewJobMemo("");
-setShowNewJobForm(false); setTargetDateForNewJob(null);
-
-} catch (error) {
-console.error(error);
-setErrorMsg(error.message || "Error");
-} finally {
-setIsGenerating(false);
-}
-};
-
 const colors = ["bg-rose-500", "bg-orange-500", "bg-amber-500", "bg-emerald-500", "bg-sky-500", "bg-violet-500"];
 
 const renderRelationFlow = (data, title) => (
