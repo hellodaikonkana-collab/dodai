@@ -342,6 +342,8 @@ const handleEditSave = async () => {
     return;
   }
 
+  setErrorMsg(null); // エラーをクリア
+
   if (newTitle !== oldTitle) {
     console.log("Title has changed. Regenerating roadmap and details.");
     setIsRegenerating(true);
@@ -391,25 +393,17 @@ const handleEditSave = async () => {
         next[targetKey] = next[targetKey].map(j => j.id === currentJob.id ? updatedJob : j);
         return next;
       });
+      setIsRegenerating(false);
+      setIsEditing(false); // 成功時のみ編集モードを終了
     } catch (error) {
       console.error("AI Generation failed during edit save:", error);
-      alert("AIによる工程の再生成中にエラーが発生しました。タイトルのみ更新して保存します。");
-      
-      // エラー時はタイトルのみ更新して他の工程データは現状維持
-      const updatedJobOnlyTitle = {
-        ...editData,
-        title: newTitle,
-      };
-      if (updatedJobOnlyTitle.translations && updatedJobOnlyTitle.translations[lang]) {
-        updatedJobOnlyTitle.translations[lang].title = newTitle;
-      }
-      setJobs(prev => {
-        const next = { ...prev };
-        next[targetKey] = next[targetKey].map(j => j.id === currentJob.id ? updatedJobOnlyTitle : j);
-        return next;
-      });
-    } finally {
+      setErrorMsg(lang === 'ja' 
+        ? "AIによる工程の再生成中にエラーが発生しました。右上の歯車マークからAPIキーが正しく設定されているか確認してください。" 
+        : "An error occurred during AI generation. Please check your API key settings."
+      );
       setIsRegenerating(false);
+      // 編集画面を閉じずにリターンし、再試行できるようにする
+      return;
     }
   } else {
     console.log("Title has not changed. Saving other changes (location/memo).");
@@ -418,8 +412,8 @@ const handleEditSave = async () => {
       next[targetKey] = next[targetKey].map(j => j.id === currentJob.id ? editData : j);
       return next;
     });
+    setIsEditing(false);
   }
-  setIsEditing(false);
 };
 const handleDeleteJob = (jobId) => {
 if (window.confirm(lang === 'ja' ? "この作業を削除しますか？" : "Are you sure you want to delete this job?")) {
@@ -875,7 +869,9 @@ Ensure the details, purpose, points, risk, and riskMgmt are highly relevant, pro
     let response = null; let retries = 5; let delay = 1000;
     while (retries > 0) {
       try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+        const modelName = retries > 2 ? "gemini-1.5-flash" : "gemini-2.5-flash";
+        console.log(`Calling Gemini API using model: ${modelName} (Retries left: ${retries})`);
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
