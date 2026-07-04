@@ -783,21 +783,82 @@ const generateData = async (title) => {
         }
       };
     } else {
-      console.log("Generic construction mock generated for title:", title);
+      console.log("Analyzing title dynamically for pseudo-AI generation:", title);
+      
+      let target = title;
+      let action = "施工";
+      
+      const actionMatch = title.match(/(取り付け|取付|設置|敷設|埋設|組み立て|組立|加工|解体|撤去|塗装|塗り|貼り|貼付|敷き|片付け|清掃|点検|検査|ビルド)$/);
+      if (actionMatch) {
+        action = actionMatch[0];
+        target = title.substring(0, title.length - action.length) || "対象物";
+      }
+      
+      const targetWithNo = target.endsWith("の") ? target : `${target}の`;
+
       return {
         translations: {
           ja: {
             title: title,
             relationData: [
-              { id: "r1", source: `${title}の準備・養生`, target: `${title}の主要施工`, focus: `KY（危険予知）の実施と施工エリアの保護確認`, prevents: `作業開始直後の不安全行動や現場周辺のキズ防止`, details: `全員で作業手順書を確認し、役割分担を明確にすることが施工品質の基本です。` },
-              { id: "r2", source: `${title}の主要施工`, target: `${title}の調整・仕上げ`, focus: `基準墨に沿った厳格な寸法測定と正確な組み立て`, prevents: `部材のズレややり直し（手戻り）の発生`, details: `各工程の節目で測定器具を用いた検査を徹底します。` },
-              { id: "r3", source: `${title}の調整・仕上げ`, target: `${title}の片付け・自主検査`, focus: `最終的な動作確認および結合箇所の目視・テスト`, prevents: `施主検査での指摘や引き渡し後の初期不良`, details: `自主点検チェックシートを活用し、各人が確実に項目をチェックします。` }
+              { 
+                id: "r1", 
+                source: `${targetWithNo}準備・養生`, 
+                target: `${targetWithNo}${action}作業`, 
+                focus: `${target}の正確な位置決めと安全な作業環境の整備`, 
+                prevents: `作業エリア周辺へのキズや、初期段階での寸法ズレによる施工手戻り`, 
+                details: `墨出しや養生シートの敷設を丁寧に行うことが、最終的な仕上がりの品質を決定づけます。` 
+              },
+              { 
+                id: "r2", 
+                source: `${targetWithNo}${action}作業`, 
+                target: `${targetWithNo}調整・固定`, 
+                focus: `${target}の強固な結合と部材ごとの確実な取り付け`, 
+                prevents: `稼働後・引き渡し後の緩み、位置のズレ、および強度不足によるトラブル防止`, 
+                details: `設計図面の仕様や規定トルクを確認し、接合部をしっかりと仮留めから本締めへ進めます。` 
+              },
+              { 
+                id: "r3", 
+                source: `${targetWithNo}調整・固定`, 
+                target: `${targetWithNo}最終検査・片付け`, 
+                focus: `全体の寸法確認と動作・外観の入念な検査`, 
+                prevents: `施主検査での指摘や、初期動作不良による引き渡しトラブル`, 
+                details: `点検チェックシートに基づき、各接合箇所や水平・垂直度をダブルチェックして記録します。` 
+              }
             ],
             processes: [
-              { num: 1, title: `施工前の準備と安全養生`, purpose: `現場周囲の保護と、本作業が安全に行える環境を整えるため。`, points: `5S（整理整頓）の徹底と作業区画 of 明示`, risk: `運搬中の転倒や周囲への衝突`, riskMgmt: `ヘルメット着用と作業床のクリア確保` },
-              { num: 2, title: `${title}の本施工・組み立て`, purpose: `設計図に基づき主要な施工を正確に進めるため。`, points: `手順書に沿った確実な組み立て・固定`, risk: `工具の使用ミスによる怪我`, riskMgmt: `電動工具の始業前点検と適切な保護手袋の着用` },
-              { num: 3, title: `接合部の処理と機能調整`, purpose: `施工した箇所が完璧に連動・固定されるようにするため。`, points: `接続部分の緩みや微小なズレの徹底確認`, risk: `不十分な調整による動作不良や隙間の発生`, riskMgmt: `テストゲージや測定ツールによるダブルチェック` },
-              { num: 4, title: `自主点検と清掃`, purpose: `引き渡し品質を確保し、現場を美しく保つため。`, points: `清掃による潜在的不具合の早期発見`, risk: `見落としや、片付け時の無理な荷崩れ`, riskMgmt: `チェックシートへの記録と順序良い資材片付け` }
+              { 
+                num: 1, 
+                title: `${targetWithNo}事前準備と安全対策`, 
+                purpose: `作業が安全かつ円滑に進むよう、下地調整とエリアを保護するため。`, 
+                points: `作業手順の確認と障害物の完全なクリア`, 
+                risk: `周囲の既存構造物への接触や資材落下`, 
+                riskMgmt: `ヘルメット・防護具の着用と保護材（養生）の確実な設置` 
+              },
+              { 
+                num: 2, 
+                title: `${targetWithNo}${action}の本施工`, 
+                purpose: `設計仕様書に沿って、本体や部材を正確に組み立てるため。`, 
+                points: `水平器や測定器を用いた確実なアライメント測定`, 
+                risk: `工具や重量物の取扱いミスによる手元の怪我`, 
+                riskMgmt: `電動工具 of 事前点検と安全な持ち方の徹底` 
+              },
+              { 
+                num: 3, 
+                title: `接合・結合部の調整および確認`, 
+                purpose: `${target}が設計通りの強度と機能を発揮できるようにするため。`, 
+                points: `固定金具や接合ボルトの規定トルクでの締め付け`, 
+                risk: `固定不良による将来的な部材の浮きやガタつき`, 
+                riskMgmt: `目視検査に加え、手締めトルクレンチでの数値確認の実施` 
+              },
+              { 
+                num: 4, 
+                title: `自主点検と現場清掃（5S）`, 
+                purpose: `施工品質を担保し、現場周辺を美しく整えて完了とするため。`, 
+                points: `仕上げ面のキズ・汚れの有無の目視チェック`, 
+                risk: `清掃中の鋭利なゴミによる怪我や忘れ物の発生`, 
+                riskMgmt: `全員で「後片付けチェックリスト」をダブルチェックすること` 
+              }
             ]
           }
         }
