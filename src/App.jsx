@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
 ArrowLeft, ArrowRight, Target, ShieldCheck, ChevronDown,
 ChevronUp, AlertTriangle, Loader2, Sparkles, Edit2, Save, Wrench,
@@ -61,7 +61,9 @@ const i18n = {
     apiKeySave: "保存する",
     apiKeyDelete: "削除する",
     apiKeyStatusSet: "APIキー設定済み (本物AI稼働)",
-    apiKeyStatusNone: "APIキー未設定 (モックモード)"
+    apiKeyStatusNone: "APIキー未設定 (モックモード)",
+    apiKeyNotice: "※本物のAI（Gemini）による高精度自動生成を利用するには、右上の「APIキー設定（歯車マーク）」からキーを入力してください（未設定時は疑似AIシミュレーションで動作します）。",
+    demoModeBanner: "【デモ・シミュレーションモード】本物のAI自動生成にはAPIキーの設定が必要です。"
   },
   en: {
     calendar: "Work Record Calendar",
@@ -117,7 +119,9 @@ const i18n = {
     apiKeySave: "Save Key",
     apiKeyDelete: "Delete Key",
     apiKeyStatusSet: "API Key Set (Real AI active)",
-    apiKeyStatusNone: "API Key Unset (Mock mode)"
+    apiKeyStatusNone: "API Key Unset (Mock mode)",
+    apiKeyNotice: "※To use genuine high-precision AI (Gemini) auto-generation, please set your API key from the gear icon in the top right (runs in simulation mode if unset).",
+    demoModeBanner: "【Simulation Mode】API key is required for genuine AI auto-generation."
   },
   vi: {
     calendar: "Lịch Công Việc",
@@ -173,7 +177,9 @@ const i18n = {
     apiKeySave: "Lưu Key",
     apiKeyDelete: "Xóa Key",
     apiKeyStatusSet: "Đã thiết lập API Key (AI đang chạy)",
-    apiKeyStatusNone: "Chưa thiết lập API Key (Chế độ giả lập)"
+    apiKeyStatusNone: "Chưa thiết lập API Key (Chế độ giả lập)",
+    apiKeyNotice: "※Để sử dụng tính năng tạo tự động bằng AI (Gemini) thực tế, vui lòng thiết lập API key từ biểu tượng bánh răng ở góc trên bên phải (chế độ giả lập nếu chưa thiết lập).",
+    demoModeBanner: "【Chế độ giả lập】Cần thiết lập API Key để chạy AI thực tế."
   }
 };
 export default function App() {
@@ -1336,6 +1342,11 @@ const renderRelationFlow = (data, title) => (
                <input type="text" placeholder={t('addJobHint')} className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 focus:border-indigo-500 outline-none shadow-sm font-bold text-gray-800" value={newJobTitle} onChange={e => setNewJobTitle(e.target.value)} disabled={isGenerating} autoFocus />
                <input type="text" placeholder={t('locationHint')} className="w-full px-5 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 outline-none shadow-sm font-bold text-gray-800 text-sm" value={newJobLocation} onChange={e => setNewJobLocation(e.target.value)} disabled={isGenerating} />
                <textarea placeholder={t('memoHint')} className="w-full px-5 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 outline-none shadow-sm font-bold text-gray-800 text-sm min-h-[80px]" value={newJobMemo} onChange={e => setNewJobMemo(e.target.value)} disabled={isGenerating} />
+               {!hasApiKey && (
+                 <p className="text-[10px] font-black text-amber-600 leading-normal bg-amber-50/70 p-3.5 rounded-xl border border-amber-100/50 mt-1">
+                   {t('apiKeyNotice')}
+                 </p>
+               )}
                <button onClick={generateJobWithAI} disabled={isGenerating || !newJobTitle.trim()} className="w-full py-4 bg-indigo-600 text-white text-lg font-black rounded-xl shadow-md hover:bg-indigo-700 hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 transition-all">
                  {isGenerating ? <><Loader2 className="w-6 h-6 animate-spin" /> {t('aiGenerating')}</> : t('createThisJob')}
                </button>
@@ -1436,10 +1447,17 @@ const renderRelationFlow = (data, title) => (
                         {currentJob.memo && <div className="flex items-start gap-2.5"><FileText className="w-5 h-5 mt-0.5 text-amber-400 shrink-0" /><span className="whitespace-pre-wrap leading-relaxed">{currentJob.memo}</span></div>}
                       </div>
                     ) : <div className="pt-3 border-t-2 border-dashed border-gray-100 text-sm font-bold text-gray-400 flex items-center gap-2"><FileText className="w-4 h-4" /> {t('noLocationMemo')}</div>}
-                    <div className="mt-4 pt-4 border-t border-gray-100">
+                    <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between flex-wrap gap-3">
                       <button onClick={() => speakAll(currentJob, activeTab)} className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 px-4 py-2 rounded-xl hover:bg-indigo-100 transition-colors w-fit">
                          <Volume2 className="w-4 h-4" /> {t('readAll')}
                       </button>
+                      
+                      {!hasApiKey && (
+                        <div className="bg-amber-50 border border-amber-100/70 px-3 py-1.5 rounded-xl text-[10px] font-black text-amber-700 flex items-center gap-1.5 shadow-sm">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                          {t('demoModeBanner')}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
